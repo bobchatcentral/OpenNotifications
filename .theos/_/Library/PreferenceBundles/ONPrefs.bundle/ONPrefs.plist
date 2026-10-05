@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>title</key><string>Open Notifications</string>
+  <key>items</key>
+  <array>
+    <dict>
+      <key>cell</key><string>PSGroupCell</string>
+      <key>label</key><string>Message</string>
+      <key>footerText</key><string>Tap Return after editing a field, then use the buttons below.</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSSwitchCell</string>
+      <key>label</key><string>Enabled</string>
+      <key>key</key><string>enabled</string>
+      <key>default</key><true/>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSEditTextCell</string>
+      <key>key</key><string>sender</string>
+      <key>default</key><string>Alex</string>
+      <key>placeholder</key><string>Sender name</string>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSEditTextCell</string>
+      <key>key</key><string>message</string>
+      <key>default</key><string>hey, are you free later?</string>
+      <key>placeholder</key><string>Message text</string>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSGroupCell</string>
+      <key>label</key><string>Fake call</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSEditTextCell</string>
+      <key>key</key><string>caller</string>
+      <key>default</key><string>Mom</string>
+      <key>placeholder</key><string>Caller name</string>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSLinkListCell</string>
+      <key>detail</key><string>PSListItemsController</string>
+      <key>label</key><string>Ringtone</string>
+      <key>key</key><string>ringtone</string>
+      <key>default</key><string>Marimba</string>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+      <key>validValues</key>
+      <array>
+        <string>Marimba</string>
+        <string>Alarm</string><string>Ascending</string><string>Bark</string>
+        <string>Bell Tower</string><string>Blues</string><string>Boing</string>
+        <string>Crickets</string><string>Digital</string><string>Doorbell</string>
+        <string>Duck</string><string>Harp</string><string>Motorcycle</string>
+        <string>Old Car Horn</string><string>Old Phone</string><string>Piano Riff</string>
+        <string>Pinball</string><string>Robot</string><string>Sci-Fi</string>
+        <string>Sonar</string><string>Strum</string><string>Timba</string>
+        <string>Time Passing</string><string>Trill</string><string>Xylophone</string>
+      </array>
+      <key>validTitles</key>
+      <array>
+        <string>Marimba (default)</string>
+        <string>Alarm</string><string>Ascending</string><string>Bark</string>
+        <string>Bell Tower</string><string>Blues</string><string>Boing</string>
+        <string>Crickets</string><string>Digital</string><string>Doorbell</string>
+        <string>Duck</string><string>Harp</string><string>Motorcycle</string>
+        <string>Old Car Horn</string><string>Old Phone</string><string>Piano Riff</string>
+        <string>Pinball</string><string>Robot</string><string>Sci-Fi</string>
+        <string>Sonar</string><string>Strum</string><string>Timba</string>
+        <string>Time Passing</string><string>Trill</string><string>Xylophone</string>
+      </array>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSSwitchCell</string>
+      <key>label</key><string>Missed call alert</string>
+      <key>key</key><string>missed</string>
+      <key>default</key><true/>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSGroupCell</string>
+      <key>label</key><string>Timing</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSLinkListCell</string>
+      <key>detail</key><string>PSListItemsController</string>
+      <key>label</key><string>Send after</string>
+      <key>key</key><string>delay</string>
+      <key>default</key><integer>5</integer>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+      <key>validValues</key>
+      <array>
+        <integer>1</integer><integer>2</integer><integer>5</integer>
+        <integer>10</integer><integer>15</integer><integer>30</integer><integer>60</integer>
+      </array>
+      <key>validTitles</key>
+      <array>
+        <string>1 minute</string><string>2 minutes</string><string>5 minutes</string>
+        <string>10 minutes</string><string>15 minutes</string><string>30 minutes</string><string>1 hour</string>
+      </array>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSGroupCell</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSButtonCell</string>
+      <key>label</key><string>Send test now</string>
+      <key>action</key><string>sendTest</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSButtonCell</string>
+      <key>label</key><string>Schedule message</string>
+      <key>action</key><string>scheduleMessage</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSButtonCell</string>
+      <key>label</key><string>Simulated call now</string>
+      <key>action</key><string>fakeCallNow</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSButtonCell</string>
+      <key>label</key><string>Schedule call</string>
+      <key>action</key><string>scheduleCall</string>
+    </dict>
+<dict>
+<key>MyTextkey</key>
+<string>Made By Evrik Colozzo 2026</string>
+</dict>
+    <dict>
+      <key>cell</key><string>PSButtonCell</string>
+      <key>label</key><string>Cancel scheduled</string>
+      <key>action</key><string>cancelScheduled</string>
+    </dict>
+  </array>
+</dict>
+</plist>

@@ -1,0 +1,9 @@
+Package: com.opennotifications.tweak
+Name: OpenNotifications
+Version: 0.1.0
+Architecture: iphoneos-arm
+Description: An awesome MobileSubstrate tweak!
+Maintainer: Evrik Colozzo
+Author: Evrik Colozzo
+Section: Tweaks
+Depends: mobilesubstrate, preferenceloader

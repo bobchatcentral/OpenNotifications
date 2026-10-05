@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>entry</key>
+  <dict>
+    <key>bundle</key><string>ONPrefs</string>
+    <key>cell</key><string>PSLinkCell</string>
+    <key>detail</key><string>ONPrefsListController</string>
+    <key>isController</key><true/>
+    <key>label</key><string>Open Notifications</string>
+  </dict>
+</dict>
+</plist>
