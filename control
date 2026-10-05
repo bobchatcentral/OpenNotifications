@@ -1,9 +1,10 @@
 Package: com.opennotifications.tweak
-Name: OpenNotifications
+Name: Open Notifications
+Depends: mobilesubstrate, preferenceloader
 Version: 0.1.0
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
+Description: A tweak for iOS 5+ that can fake message and call notifications
 Maintainer: Evrik Colozzo
 Author: Evrik Colozzo
 Section: Tweaks
-Depends: mobilesubstrate, preferenceloader
+Icon: file:///usr/share/opennotifications/icon.png

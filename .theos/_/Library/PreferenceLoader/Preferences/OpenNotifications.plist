@@ -6,6 +6,7 @@
     <key>bundle</key><string>ONPrefs</string>
     <key>cell</key><string>PSLinkCell</string>
     <key>detail</key><string>ONPrefsListController</string>
+    <key>icon</key><string>icon.png</string>
     <key>isController</key><true/>
     <key>label</key><string>Open Notifications</string>
   </dict>
