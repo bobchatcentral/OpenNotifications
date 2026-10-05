@@ -117,22 +117,22 @@
     </dict>
     <dict>
       <key>cell</key><string>PSButtonCell</string>
-      <key>label</key><string>Simulated call now</string>
+      <key>label</key><string>Fake call now</string>
       <key>action</key><string>fakeCallNow</string>
     </dict>
     <dict>
       <key>cell</key><string>PSButtonCell</string>
-      <key>label</key><string>Schedule call</string>
+      <key>label</key><string>Schedule fake call</string>
       <key>action</key><string>scheduleCall</string>
     </dict>
-<dict>
-<key>MyTextkey</key>
-<string>Made By Evrik Colozzo 2026</string>
-</dict>
     <dict>
       <key>cell</key><string>PSButtonCell</string>
       <key>label</key><string>Cancel scheduled</string>
       <key>action</key><string>cancelScheduled</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSGroupCell</string>
+      <key>footerText</key><string>Made by Evrik Colozzo 2026</string>
     </dict>
   </array>
 </dict>
