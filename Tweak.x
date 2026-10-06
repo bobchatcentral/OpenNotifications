@@ -1,3 +1,6 @@
+//Open Notifications v0.1.0
+// Made by Evrik Colozzo
+// Last updated october 6, 2026
 #import <UIKit/UIKit.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <AVFoundation/AVFoundation.h>
