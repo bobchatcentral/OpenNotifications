@@ -1,4 +1,4 @@
-// OpenNotifications v0.1.0
+// OpenNotifications v0.2.0
 // Made by Evrik Colozzo 2026
 //Last updated October 7, 2026
 #import <UIKit/UIKit.h>
