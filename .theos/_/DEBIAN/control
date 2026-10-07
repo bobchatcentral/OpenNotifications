@@ -7,5 +7,5 @@ Author: Evrik Colozzo
 Section: Tweaks
 Icon: file:///usr/share/opennotifications/icon.png
 Architecture: iphoneos-arm
-Version: 0.1.0-16+debug
-Installed-Size: 148
+Version: 0.1.0-17+debug
+Installed-Size: 168

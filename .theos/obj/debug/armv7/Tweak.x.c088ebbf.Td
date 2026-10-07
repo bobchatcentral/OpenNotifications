@@ -1,5 +1,5 @@
-/Users/ecolozzo/OpenNotifications/.theos/obj/debug/armv7/Tweak.x.19212794.o: \
-  /Users/ecolozzo/OpenNotifications/.theos/obj/debug/armv7/Tweak.x.m \
+/Users/ecolozzo/opennotifications/.theos/obj/debug/armv7/Tweak.x.c088ebbf.o: \
+  /Users/ecolozzo/opennotifications/.theos/obj/debug/armv7/Tweak.x.m \
   /Users/ecolozzo/theos/Prefix.pch \
   /Users/ecolozzo/theos/vendor/include/theos/BackwardsCompat.h \
   /Users/ecolozzo/theos/vendor/include/theos/IOSMacros.h \

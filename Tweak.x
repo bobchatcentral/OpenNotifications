@@ -1,6 +1,6 @@
-//Open Notifications v0.1.0
-// Made by Evrik Colozzo
-// Last updated october 6, 2026
+// OpenNotifications v0.1.0
+// Made by Evrik Colozzo 2026
+//Last updated October 7, 2026
 #import <UIKit/UIKit.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <AVFoundation/AVFoundation.h>
@@ -9,6 +9,7 @@
 #import <stdio.h>
 #import <stdlib.h>
 #import <stdarg.h>
+#import <sys/utsname.h>
 
 #define SETTINGS_DOMAIN CFSTR("com.opennotifications.settings")
 #define TRIGGER_PATH @"/var/mobile/on_test_now"
@@ -108,6 +109,13 @@ static BOOL prefBool(CFStringRef key, BOOL def) {
     return out;
 }
 
+static BOOL padMode(void) {
+    NSString *m = [prefString(CFSTR("uimode"), @"auto") lowercaseString];
+    if ([m isEqualToString:@"ipad"]) return YES;
+    if ([m isEqualToString:@"iphone"]) return NO;
+    return UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad;
+}
+
 static NSDictionary *currentEvent(void) {
     CFPreferencesAppSynchronize(SETTINGS_DOMAIN);
     return [NSDictionary dictionaryWithObjectsAndKeys:
@@ -205,6 +213,39 @@ static void wakeScreen(void) {
     keepAwake();
 }
 
+// ---------- camera-off icon for the FaceTime style ----------
+@interface ONCamIcon : UIView
+@end
+
+@implementation ONCamIcon
+- (id)initWithFrame:(CGRect)f {
+    self = [super initWithFrame:f];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        self.userInteractionEnabled = NO;
+    }
+    return self;
+}
+- (void)drawRect:(CGRect)r {
+    CGFloat w = self.bounds.size.width, h = self.bounds.size.height;
+    [[UIColor whiteColor] setFill];
+    [[UIColor whiteColor] setStroke];
+    [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, h * 0.15, w * 0.68, h * 0.7)
+                                cornerRadius:5] fill];
+    UIBezierPath *lens = [UIBezierPath bezierPath];
+    [lens moveToPoint:CGPointMake(w * 0.74, h * 0.5)];
+    [lens addLineToPoint:CGPointMake(w, h * 0.15)];
+    [lens addLineToPoint:CGPointMake(w, h * 0.85)];
+    [lens closePath];
+    [lens fill];
+    UIBezierPath *slash = [UIBezierPath bezierPath];
+    slash.lineWidth = 4;
+    [slash moveToPoint:CGPointMake(w * 0.05, h * 0.95)];
+    [slash addLineToPoint:CGPointMake(w * 0.95, h * 0.05)];
+    [slash stroke];
+}
+@end
+
 // ---------- fake call screen ----------
 @interface ONCallHandler : NSObject
 - (void)accept;
@@ -213,6 +254,7 @@ static void wakeScreen(void) {
 - (void)ring:(NSTimer *)t;
 - (void)timeout:(NSTimer *)t;
 - (void)awake:(NSTimer *)t;
+- (void)orient:(NSNotification *)n;
 @end
 
 static UIWindow *gCallWindow = nil;
@@ -224,12 +266,20 @@ static NSTimer *gRingTimer = nil;
 static NSTimer *gTickTimer = nil;
 static NSTimer *gTimeoutTimer = nil;
 static NSTimer *gAwakeTimer = nil;
+static UILabel *gNameLabel = nil;
+static UILabel *gSubLabel = nil;
 static UILabel *gStatus = nil;
 static UIButton *gAcceptBtn = nil;
 static UIButton *gDeclineBtn = nil;
+static UIButton *gEndBtn = nil;
+static ONCamIcon *gCamIcon = nil;
+static CAGradientLayer *gBg = nil;
 static UIView *gCallView = nil;
 static NSDate *gCallStart = nil;
 static NSString *gCallerName = nil;
+static BOOL gFT = NO;
+static BOOL gOrientOn = NO;
+static UIDeviceOrientation gLastOrient = UIDeviceOrientationPortrait;
 
 static void stopRinging(void) {
     if (gRingSID) {
@@ -245,30 +295,142 @@ static void stopRinging(void) {
 
 static void dismissCall(void) {
     stopRinging();
+    if (gOrientOn) {
+        gOrientOn = NO;
+        [[NSNotificationCenter defaultCenter] removeObserver:gCallHandler];
+        [[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
+    }
     if (gTickTimer) { [gTickTimer invalidate]; [gTickTimer release]; gTickTimer = nil; }
     if (gAwakeTimer) { [gAwakeTimer invalidate]; [gAwakeTimer release]; gAwakeTimer = nil; }
     [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     if (gCallWindow) { [gCallWindow setHidden:YES]; [gCallWindow release]; gCallWindow = nil; }
     [gCallStart release]; gCallStart = nil;
-    gStatus = nil; gAcceptBtn = nil; gDeclineBtn = nil; gCallView = nil;
+    gNameLabel = nil; gSubLabel = nil; gStatus = nil;
+    gAcceptBtn = nil; gDeclineBtn = nil; gEndBtn = nil;
+    gCamIcon = nil; gBg = nil; gCallView = nil;
     ONLog(@"[OpenNotifications] call dismissed");
 }
 
-static UIButton *makeButton(NSString *title, UIColor *color, CGRect f, SEL sel) {
+// kind 0 = red, 1 = green
+static UIButton *makeButton(NSString *title, int kind, SEL sel) {
     UIButton *b = [UIButton buttonWithType:UIButtonTypeCustom];
-    b.frame = f;
-    b.backgroundColor = color;
-    b.layer.cornerRadius = 10;
-    b.titleLabel.font = [UIFont boldSystemFontOfSize:18];
+    b.layer.cornerRadius = gFT ? 12 : 10;
+    b.layer.masksToBounds = YES;
+    b.titleLabel.font = [UIFont boldSystemFontOfSize:(gFT ? 28 : 18)];
     [b setTitle:title forState:UIControlStateNormal];
     [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+
+    CAGradientLayer *g = [CAGradientLayer layer];
+    UIColor *top = kind == 0 ? [UIColor colorWithRed:0.93 green:0.35 blue:0.35 alpha:1.0]
+                             : [UIColor colorWithRed:0.45 green:0.85 blue:0.45 alpha:1.0];
+    UIColor *bot = kind == 0 ? [UIColor colorWithRed:0.65 green:0.0 blue:0.0 alpha:1.0]
+                             : [UIColor colorWithRed:0.10 green:0.55 blue:0.15 alpha:1.0];
+    g.colors = [NSArray arrayWithObjects:(id)top.CGColor, (id)bot.CGColor, nil];
+    [b.layer insertSublayer:g atIndex:0];
+
     [b addTarget:gCallHandler action:sel forControlEvents:UIControlEventTouchUpInside];
     return b;
+}
+
+static void setBtnFrame(UIButton *b, CGRect f) {
+    b.frame = f;
+    NSArray *subs = b.layer.sublayers;
+    if ([subs count] && [[subs objectAtIndex:0] isKindOfClass:[CAGradientLayer class]])
+        [(CALayer *)[subs objectAtIndex:0] setFrame:b.bounds];
+}
+
+static void layoutCall(void) {
+    if (!gCallView) return;
+    CGRect b = gCallView.bounds;
+    CGFloat W = b.size.width, H = b.size.height;
+    if (gBg) gBg.frame = b;
+
+    if (gFT) {
+        gNameLabel.frame = CGRectMake(20, 34, W - 40, 56);
+        gStatus.frame = CGRectMake(0, 92, W, 36);
+        CGFloat bh = 64, y = H - 110;
+        if (gAcceptBtn && gDeclineBtn) {
+            CGFloat bw = (W - 90) / 2;
+            setBtnFrame(gDeclineBtn, CGRectMake(30, y, bw, bh));
+            setBtnFrame(gAcceptBtn, CGRectMake(60 + bw, y, bw, bh));
+        }
+        if (gEndBtn) {
+            setBtnFrame(gEndBtn, CGRectMake(30, y, W - 60, bh));
+            if (gCamIcon) gCamIcon.frame = CGRectMake((W - 60) / 2 - 75, (bh - 30) / 2, 46, 30);
+        }
+    } else {
+        gSubLabel.frame = CGRectMake(0, 70, W, 24);
+        gNameLabel.frame = CGRectMake(10, 100, W - 20, 50);
+        gStatus.frame = CGRectMake(0, 160, W, 24);
+        CGFloat y = H - 130;
+        if (gAcceptBtn && gDeclineBtn) {
+            setBtnFrame(gDeclineBtn, CGRectMake(30, y, 120, 60));
+            setBtnFrame(gAcceptBtn, CGRectMake(W - 150, y, 120, 60));
+        }
+        if (gEndBtn) setBtnFrame(gEndBtn, CGRectMake((W - 160) / 2, y, 160, 60));
+    }
+}
+
+static void applyOrientation(BOOL animated) {
+    if (!gCallView) return;
+    CGRect sb = [[UIScreen mainScreen] bounds];
+    UIDeviceOrientation o = [[UIDevice currentDevice] orientation];
+    if (!prefBool(CFSTR("rotate"), YES)) o = UIDeviceOrientationPortrait;
+    if (!(o == UIDeviceOrientationPortrait || o == UIDeviceOrientationPortraitUpsideDown ||
+          o == UIDeviceOrientationLandscapeLeft || o == UIDeviceOrientationLandscapeRight))
+        o = gLastOrient;
+    gLastOrient = o;
+
+    CGFloat ang = 0;
+    BOOL land = NO;
+    if (o == UIDeviceOrientationLandscapeLeft) { ang = M_PI_2; land = YES; }
+    else if (o == UIDeviceOrientationLandscapeRight) { ang = -M_PI_2; land = YES; }
+    else if (o == UIDeviceOrientationPortraitUpsideDown) { ang = M_PI; }
+
+    CGFloat W = land ? sb.size.height : sb.size.width;
+    CGFloat H = land ? sb.size.width : sb.size.height;
+    void (^apply)(void) = ^{
+        gCallView.transform = CGAffineTransformIdentity;
+        gCallView.bounds = CGRectMake(0, 0, W, H);
+        gCallView.center = CGPointMake(sb.size.width / 2, sb.size.height / 2);
+        gCallView.transform = CGAffineTransformMakeRotation(ang);
+        layoutCall();
+    };
+    if (animated) [UIView animateWithDuration:0.25 animations:apply];
+    else apply();
 }
 
 // loops the system sound until the call ends
 static void ringDone(SystemSoundID sid, void *ctx) {
     if (gRingSIDActive) AudioServicesPlaySystemSound(sid);
+}
+
+// looks for a FaceTime ringtone file anywhere in the usual sound folders
+static NSString *findFaceTimeTone(void) {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    const char *roots[] = { "/System/Library/Audio/UISounds", "/Library/Ringtones",
+                            "/System/Library/CoreServices/SpringBoard.app",
+                            "/Applications/FaceTime.app", "/System/Library/PrivateFrameworks/FaceTimeUI.framework" };
+    NSString *fallback = nil;
+    int i;
+    for (i = 0; i < 5; i++) {
+        NSString *root = [NSString stringWithUTF8String:roots[i]];
+        NSDirectoryEnumerator *en = [fm enumeratorAtPath:root];
+        NSString *f;
+        while ((f = [en nextObject])) {
+            NSString *l = [f lowercaseString];
+            if ([l rangeOfString:@"facetime"].location == NSNotFound) continue;
+            NSString *ext = [l pathExtension];
+            if (!([ext isEqualToString:@"caf"] || [ext isEqualToString:@"m4r"] ||
+                  [ext isEqualToString:@"aif"] || [ext isEqualToString:@"aiff"] ||
+                  [ext isEqualToString:@"m4a"] || [ext isEqualToString:@"mp3"] ||
+                  [ext isEqualToString:@"wav"])) continue;
+            NSString *full = [root stringByAppendingPathComponent:f];
+            if ([l rangeOfString:@"ring"].location != NSNotFound) return full;
+            if (!fallback) fallback = full;
+        }
+    }
+    return fallback;
 }
 
 static void startRinging(void) {
@@ -280,7 +442,13 @@ static void startRinging(void) {
     NSString *lname = [name lowercaseString];
     NSString *src = nil;
 
-    if (([lname isEqualToString:@"marimba"] || [lname isEqualToString:@"default"])
+    if ([lname isEqualToString:@"facetime"]) {
+        src = findFaceTimeTone();
+        if (!src) {
+            ONLog(@"[OpenNotifications] facetime tone not found, using default tone");
+            src = DEFAULT_TONE;
+        }
+    } else if (([lname isEqualToString:@"marimba"] || [lname isEqualToString:@"default"])
         && [fm fileExistsAtPath:DEFAULT_TONE]) {
         src = DEFAULT_TONE;
     } else if ([name hasPrefix:@"/"] && [fm fileExistsAtPath:name]) {
@@ -300,14 +468,15 @@ static void startRinging(void) {
     }
     ONLog(@"[OpenNotifications] ringtone source: %@ (exists %d)", src, [fm fileExistsAtPath:src]);
 
-    NSString *tmp = @"/tmp/on_ring.m4a";
+    NSString *ext = [[src pathExtension] lowercaseString];
+    if ([ext length] == 0 || [ext isEqualToString:@"m4r"]) ext = @"m4a";
+    NSString *tmp = [NSString stringWithFormat:@"/tmp/on_ring.%@", ext];
     [fm removeItemAtPath:tmp error:NULL];
     NSError *cerr = nil;
     BOOL copied = [fm copyItemAtPath:src toPath:tmp error:&cerr];
     ONLog(@"[OpenNotifications] ringtone copy: %d %@", copied, cerr ? [cerr localizedDescription] : @"");
     NSString *playPath = copied ? tmp : src;
 
-    // Method 1: system sound (follows ringer volume and silent switch)
     SystemSoundID sid = 0;
     OSStatus st = AudioServicesCreateSystemSoundID((CFURLRef)[NSURL fileURLWithPath:playPath], &sid);
     ONLog(@"[OpenNotifications] system sound create status %d", (int)st);
@@ -318,7 +487,6 @@ static void startRinging(void) {
         AudioServicesPlaySystemSound(sid);
         ONLog(@"[OpenNotifications] ringtone playing as system sound");
     } else {
-        // Method 2: AVAudioPlayer fallback
         NSError *err = nil;
         [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&err];
         [[AVAudioSession sharedInstance] setActive:YES error:&err];
@@ -338,11 +506,23 @@ static void startRinging(void) {
                     selector:@selector(timeout:) userInfo:nil repeats:NO] retain];
 }
 
+static UILabel *makeLabel(NSString *text, UIFont *font, UIColor *color) {
+    UILabel *l = [[[UILabel alloc] init] autorelease];
+    l.text = text;
+    l.font = font;
+    l.textColor = color;
+    l.textAlignment = UITextAlignmentCenter;
+    l.backgroundColor = [UIColor clearColor];
+    return l;
+}
+
 static void showCall(NSString *name) {
     if (gCallWindow) return;
     if (!gCallHandler) gCallHandler = [[ONCallHandler alloc] init];
     [gCallerName release];
     gCallerName = [name copy];
+    gFT = padMode();
+    ONLog(@"[OpenNotifications] call style: %s", gFT ? "FaceTime/iPad" : "iPhone");
 
     wakeScreen();
     [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
@@ -359,46 +539,48 @@ static void showCall(NSString *name) {
     gCallView.backgroundColor = [UIColor colorWithWhite:0.08 alpha:1.0];
     [gCallWindow addSubview:gCallView];
 
-    UILabel *sub = [[[UILabel alloc] initWithFrame:CGRectMake(0, 70, b.size.width, 24)] autorelease];
-    sub.text = @"mobile";
-    sub.textAlignment = UITextAlignmentCenter;
-    sub.textColor = [UIColor colorWithWhite:0.7 alpha:1.0];
-    sub.backgroundColor = [UIColor clearColor];
-    sub.font = [UIFont systemFontOfSize:18];
-    [gCallView addSubview:sub];
+    if (gFT) {
+        gBg = [CAGradientLayer layer];
+        gBg.colors = [NSArray arrayWithObjects:
+                      (id)[UIColor colorWithWhite:0.32 alpha:1.0].CGColor,
+                      (id)[UIColor colorWithWhite:0.14 alpha:1.0].CGColor,
+                      (id)[UIColor colorWithWhite:0.04 alpha:1.0].CGColor, nil];
+        [gCallView.layer insertSublayer:gBg atIndex:0];
+        gNameLabel = makeLabel(name, [UIFont systemFontOfSize:46], [UIColor whiteColor]);
+        gStatus = makeLabel(@"FaceTime...", [UIFont systemFontOfSize:30], [UIColor whiteColor]);
+        gNameLabel.adjustsFontSizeToFitWidth = YES;
+        [gCallView addSubview:gNameLabel];
+        [gCallView addSubview:gStatus];
+    } else {
+        gSubLabel = makeLabel(@"mobile", [UIFont systemFontOfSize:18], [UIColor colorWithWhite:0.7 alpha:1.0]);
+        gNameLabel = makeLabel(name, [UIFont boldSystemFontOfSize:38], [UIColor whiteColor]);
+        gNameLabel.adjustsFontSizeToFitWidth = YES;
+        gStatus = makeLabel(@"incoming call...", [UIFont systemFontOfSize:18], [UIColor colorWithWhite:0.7 alpha:1.0]);
+        [gCallView addSubview:gSubLabel];
+        [gCallView addSubview:gNameLabel];
+        [gCallView addSubview:gStatus];
+    }
 
-    UILabel *nm = [[[UILabel alloc] initWithFrame:CGRectMake(10, 100, b.size.width - 20, 50)] autorelease];
-    nm.text = name;
-    nm.textAlignment = UITextAlignmentCenter;
-    nm.textColor = [UIColor whiteColor];
-    nm.backgroundColor = [UIColor clearColor];
-    nm.font = [UIFont boldSystemFontOfSize:38];
-    nm.adjustsFontSizeToFitWidth = YES;
-    [gCallView addSubview:nm];
-
-    gStatus = [[[UILabel alloc] initWithFrame:CGRectMake(0, 160, b.size.width, 24)] autorelease];
-    gStatus.text = @"incoming call...";
-    gStatus.textAlignment = UITextAlignmentCenter;
-    gStatus.textColor = [UIColor colorWithWhite:0.7 alpha:1.0];
-    gStatus.backgroundColor = [UIColor clearColor];
-    gStatus.font = [UIFont systemFontOfSize:18];
-    [gCallView addSubview:gStatus];
-
-    CGFloat y = b.size.height - 130;
-    gDeclineBtn = makeButton(@"Decline", [UIColor colorWithRed:0.85 green:0.15 blue:0.15 alpha:1.0],
-                             CGRectMake(30, y, 120, 60), @selector(decline));
-    gAcceptBtn = makeButton(@"Accept", [UIColor colorWithRed:0.1 green:0.7 blue:0.25 alpha:1.0],
-                            CGRectMake(b.size.width - 150, y, 120, 60), @selector(accept));
+    gDeclineBtn = makeButton(@"Decline", 0, @selector(decline));
+    gAcceptBtn = makeButton(@"Accept", 1, @selector(accept));
     [gCallView addSubview:gDeclineBtn];
     [gCallView addSubview:gAcceptBtn];
 
     [gCallWindow setHidden:NO];
+
+    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+    gOrientOn = YES;
+    [[NSNotificationCenter defaultCenter] addObserver:gCallHandler selector:@selector(orient:)
+        name:UIDeviceOrientationDidChangeNotification object:nil];
+    applyOrientation(NO);
+
     startRinging();
     ONLog(@"[OpenNotifications] call shown for %@", name);
 }
 
 @implementation ONCallHandler
 - (void)awake:(NSTimer *)t { keepAwake(); }
+- (void)orient:(NSNotification *)n { applyOrientation(YES); }
 - (void)ring:(NSTimer *)t {
     AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
     if (!gRing && !gRingSID) AudioServicesPlaySystemSound(1007);
@@ -421,15 +603,19 @@ static void showCall(NSString *name) {
     [gAcceptBtn removeFromSuperview];
     [gDeclineBtn removeFromSuperview];
     gAcceptBtn = nil; gDeclineBtn = nil;
-    CGRect b = [[UIScreen mainScreen] bounds];
-    UIButton *end = makeButton(@"End", [UIColor colorWithRed:0.85 green:0.15 blue:0.15 alpha:1.0],
-                               CGRectMake((b.size.width - 160) / 2, b.size.height - 130, 160, 60),
-                               @selector(decline));
-    [gCallView addSubview:end];
+
+    gEndBtn = makeButton(@"End", 0, @selector(decline));
+    [gCallView addSubview:gEndBtn];
+    if (gFT) {
+        gEndBtn.titleEdgeInsets = UIEdgeInsetsMake(0, 70, 0, 0);
+        gCamIcon = [[[ONCamIcon alloc] initWithFrame:CGRectMake(0, 0, 46, 30)] autorelease];
+        [gEndBtn addSubview:gCamIcon];
+    }
     gStatus.text = @"0:00";
     gCallStart = [[NSDate date] retain];
     gTickTimer = [[NSTimer scheduledTimerWithTimeInterval:1.0 target:self
                     selector:@selector(tick:) userInfo:nil repeats:YES] retain];
+    layoutCall();
     ONLog(@"[OpenNotifications] call accepted");
 }
 - (void)tick:(NSTimer *)t {
@@ -546,7 +732,11 @@ static void onCallSchedule(CFNotificationCenterRef c, void *o, CFStringRef n, co
 // ---------- startup ----------
 %ctor {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    ONLog(@"[OpenNotifications] loaded into SpringBoard");
+    struct utsname u;
+    uname(&u);
+    ONLog(@"[OpenNotifications] loaded into SpringBoard: %s, iOS %@, idiom %s",
+          u.machine, [[UIDevice currentDevice] systemVersion],
+          UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? "iPad" : "iPhone");
     gSched = [[ONScheduler alloc] init];
 
     CFNotificationCenterRef dn = CFNotificationCenterGetDarwinNotifyCenter();

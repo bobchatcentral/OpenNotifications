@@ -1,4 +1,4 @@
-/Users/ecolozzo/OpenNotifications/.theos/obj/debug/armv7/ONPrefsListController.m.a9ef7da4.o: \
+/Users/ecolozzo/opennotifications/.theos/obj/debug/armv7/ONPrefsListController.m.9e4daebe.o: \
   ONPrefsListController.m /Users/ecolozzo/theos/Prefix.pch \
   /Users/ecolozzo/theos/vendor/include/theos/BackwardsCompat.h \
   /Users/ecolozzo/theos/vendor/include/theos/IOSMacros.h \

@@ -44,13 +44,32 @@
     <dict>
       <key>cell</key><string>PSLinkListCell</string>
       <key>detail</key><string>PSListItemsController</string>
+      <key>label</key><string>Call screen style</string>
+      <key>key</key><string>uimode</string>
+      <key>default</key><string>auto</string>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+      <key>validValues</key>
+      <array><string>auto</string><string>iphone</string><string>ipad</string></array>
+      <key>validTitles</key>
+      <array><string>Auto-detect</string><string>iPhone</string><string>iPad FaceTime</string></array>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSSwitchCell</string>
+      <key>label</key><string>Rotate call screen</string>
+      <key>key</key><string>rotate</string>
+      <key>default</key><true/>
+      <key>defaults</key><string>com.opennotifications.settings</string>
+    </dict>
+    <dict>
+      <key>cell</key><string>PSLinkListCell</string>
+      <key>detail</key><string>PSListItemsController</string>
       <key>label</key><string>Ringtone</string>
       <key>key</key><string>ringtone</string>
       <key>default</key><string>Marimba</string>
       <key>defaults</key><string>com.opennotifications.settings</string>
       <key>validValues</key>
       <array>
-        <string>Marimba</string>
+        <string>Marimba</string><string>FaceTime</string>
         <string>Alarm</string><string>Ascending</string><string>Bark</string>
         <string>Bell Tower</string><string>Blues</string><string>Boing</string>
         <string>Crickets</string><string>Digital</string><string>Doorbell</string>
@@ -62,7 +81,7 @@
       </array>
       <key>validTitles</key>
       <array>
-        <string>Marimba (default)</string>
+        <string>Marimba (default)</string><string>FaceTime</string>
         <string>Alarm</string><string>Ascending</string><string>Bark</string>
         <string>Bell Tower</string><string>Blues</string><string>Boing</string>
         <string>Crickets</string><string>Digital</string><string>Doorbell</string>
