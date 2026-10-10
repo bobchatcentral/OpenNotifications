@@ -5,7 +5,7 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = OpenNotifications
 OpenNotifications_FILES = Tweak.x
-OpenNotifications_FRAMEWORKS = UIKit Foundation CoreGraphics AudioToolbox AVFoundation QuartzCore
+OpenNotifications_FRAMEWORKS = UIKit Foundation CoreGraphics AudioToolbox AVFoundation QuartzCore AddressBook
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
